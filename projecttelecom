@@ -1,0 +1,190 @@
+# Import necessary libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression
+from flask import Flask, request, render_template, jsonify
+
+# Step 1: Data Preprocessing
+# Load the dataset
+df = pd.read_csv("Telecom_Customer_Churn.csv")
+
+# Data cleaning and preprocessing steps go here
+
+# Step 2: Exploratory Data Analysis (EDA)
+ Load the dataset
+df = pd.read_csv("Telecom_Customer_Churn.csv")
+
+# Display the first few rows of the dataset
+print(df.head())
+
+# Summary statistics of numerical columns
+print(df.describe())
+
+# Summary statistics of categorical columns
+print(df.describe(include=["object"]))
+
+# Visualize churn distribution
+plt.figure(figsize=(6, 4))
+sns.countplot(data=df, x="Churn")
+plt.title("Churn Distribution")
+plt.show()
+
+# Visualize the correlation matrix
+corr_matrix = df.corr()
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, cmap="coolwarm")
+plt.title("Correlation Matrix")
+plt.show()
+
+# Visualize other aspects of the data as needed
+# Create additional plots or visualizations based on your specific questions and objectives
+
+# Explore categorical variables
+# Example: Visualize the distribution of Contract types
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df, x="Contract")
+plt.title("Distribution of Contract Types")
+plt.xticks(rotation=45)
+plt.show()
+
+# Step 3: Feature Engineering
+categorical_cols = ["MultipleLines", "InternetService", "Contract", "PaymentMethod"]
+df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+
+# 2. Scaling numerical features (if necessary)
+
+from sklearn.preprocessing import StandardScaler
+
+numerical_cols = ["tenure", "MonthlyCharges", "TotalCharges"]
+scaler = StandardScaler()
+df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
+
+# 3. Creating new features (if needed)
+
+# Example: Combine the effects of streaming TV and streaming movies into one feature
+df["StreamingServices"] = df["StreamingTV_Yes"] + df["StreamingMovies_Yes"]
+df.drop(["StreamingTV_Yes", "StreamingMovies_Yes"], axis=1, inplace=True)
+
+# 4. Handling missing values (if any)
+
+# Check for missing values
+print(df.isnull().sum())
+
+# Handle missing values based on your strategy (e.g., imputation)
+
+# 5. Feature selection (if necessary)
+
+# You can use techniques like feature importance or recursive feature elimination to select relevant features.
+
+# After completing these feature engineering steps, your dataset should be ready for modeling.
+
+# Step 4: Model Building for Churn Prediction
+# Define features and target variable
+X = df.drop("Churn", axis=1)
+y = df["Churn"]
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create and train a classifier (e.g., Random Forest)
+classifier = RandomForestClassifier(random_state=42)
+classifier.fit(X_train, y_train)
+
+# Evaluate the classifier
+
+# Step 5: Model Building for Revenue Prediction
+# Filter data for customers who did not churn
+non_churn_data = df[df["Churn"] == "No"]
+
+# Define features for revenue prediction
+X_revenue = non_churn_data.drop("TotalCharges", axis=1)
+y_revenue = non_churn_data["TotalCharges"]
+
+# Split the dataset into training and testing sets
+X_train_revenue, X_test_revenue, y_train_revenue, y_test_revenue = train_test_split(X_revenue, y_revenue, test_size=0.2, random_state=42)
+
+# Create and train a regression model (e.g., Linear Regression)
+regressor = LinearRegression()
+regressor.fit(X_train_revenue, y_train_revenue)
+
+# Evaluate the regression model
+
+# Step 6: Generate Insights and Visualizations
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+df = pd.read_csv("Telecom_Customer_Churn.csv")
+
+# Visualize churn rates by gender
+plt.figure(figsize=(8, 6))
+sns.countplot(data=df, x="gender", hue="Churn")
+plt.title("Churn Rates by Gender")
+plt.xlabel("Gender")
+plt.ylabel("Count")
+plt.legend(title="Churn", labels=["No", "Yes"])
+plt.show()
+
+# Visualize churn rates by contract type
+plt.figure(figsize=(10, 6))
+sns.countplot(data=df, x="Contract", hue="Churn")
+plt.title("Churn Rates by Contract Type")
+plt.xlabel("Contract Type")
+plt.ylabel("Count")
+plt.legend(title="Churn", labels=["No", "Yes"])
+plt.xticks(rotation=45)
+plt.show()
+
+# Calculate and visualize average monthly charges for churned vs. non-churned customers
+avg_monthly_charges = df.groupby("Churn")["MonthlyCharges"].mean()
+avg_monthly_charges.plot(kind="bar", color=["green", "red"], figsize=(8, 6))
+plt.title("Average Monthly Charges for Churned vs. Non-Churned Customers")
+plt.xlabel("Churn")
+plt.ylabel("Average Monthly Charges")
+plt.xticks(rotation=0)
+plt.show()
+
+# Create additional visualizations and insights based on your specific project goals
+
+
+# Step 7: Build the Application
+
+# Load the trained churn prediction model (you should train and save this model separately)
+model = joblib.load("churn_model.pkl")
+
+# Create a Flask web application
+app = Flask(__name__)
+
+# Define a route for the home page
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# Define a route for handling predictions
+@app.route("/predict", methods=["POST"])
+def predict():
+    # Get user input from the form
+    customer_data = request.form.to_dict()
+
+    # Preprocess and format the user input as needed
+    # Example: Convert categorical variables to one-hot encoding
+
+    # Create a DataFrame from the user input
+    input_data = pd.DataFrame(customer_data, index=[0])
+
+    # Make churn prediction using the loaded model
+    prediction = model.predict(input_data)[0]
+
+    # Translate the prediction (0 or 1) to a meaningful result
+    if prediction == 0:
+        result = "No Churn"
+    else:
+        result = "Churn"
+
+    # Return the prediction as a response
+    return render_template("result.html", result=result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
